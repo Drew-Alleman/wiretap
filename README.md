@@ -1,6 +1,8 @@
 # wiretap
 Stealthy Windows audio-capture tool with asynchronous UDP exfiltration and randomized transmission intervals for Evasion-focused Red Team operations. (WIP)
 
+<img width="1287" height="357" alt="image" src="https://github.com/user-attachments/assets/85421209-d485-4f91-a986-82b1bcf4e2e0" />
+
 # To-Do
 
 ## In-General
@@ -25,4 +27,8 @@ Stealthy Windows audio-capture tool with asynchronous UDP exfiltration and rando
 - Add an option to change what microphone to use
 - Argument to change packet size
 - Enumeration packet to gather information about the device
+
+### Administrator Settings (IDK yet)
+- Persistance??
+- Add option to remove the "wiretap.exe is using your microphone" on the windows task bar (needs admin)
 
