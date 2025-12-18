@@ -10,9 +10,10 @@ Stealthy Windows audio-capture tool with asynchronous UDP exfiltration and rando
 - Tutorial on how to import the raw audio into Audacity
 
 ## Python Listener
-- Allow multiple connections at once
-- Argparse
-- Refactor
+The following should be ready to go, I just need to test the code:
+  - Allow multiple connections at once
+  - Argparse
+  - Refactor
 
 ## Wiretap
 - Verbose setting
