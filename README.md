@@ -12,8 +12,6 @@ Stealthy Windows audio-capture tool with UDP exfiltration and randomized transmi
 ## Python Listener
 The following should be ready to go, I just need to test the code:
   - Allow multiple connections at once
-  - Argparse
-  - Refactor
 
 ## Wiretap
 - Verbose setting
