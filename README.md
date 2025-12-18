@@ -29,6 +29,7 @@ The following should be ready to go, I just need to test the code:
 - Add an option to change what microphone to use
 - Argument to change packet size
 - Enumeration packet to gather information about the device
+- Option to only capture audio between certain time periods
 
 ### Administrator Settings (IDK yet)
 - Persistance??
