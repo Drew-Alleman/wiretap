@@ -98,7 +98,7 @@ void AudioManager::SelectMicrophoneFromInt(int micIndex) {
         }
         else {
             std::cerr << "[-] Failed to fetch microphone from index: " << micIndex << " using default microphone." << std::endl;
-        } 
+        }
         pCollection->Release();
     }
     else {
@@ -151,10 +151,16 @@ bool AudioManager::Initialize() {
     if (FAILED(hr)) return false;
 
     if (targetDeviceId.empty()) {
-        hr = pEnumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &pDevice);
+        if (FAILED(pEnumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &pDevice))) {
+            std::cerr << "[-] Failed to grab default audio device." << std::endl;
+            return false;
+        }
     }
     else {
-        hr = pEnumerator->GetDevice(targetDeviceId.c_str(), &pDevice);
+        if (FAILED(pEnumerator->GetDevice(targetDeviceId.c_str(), &pDevice))) {
+            std::cerr << "[-] Failed to fetch device from the string: '" << targetDeviceId.c_str() << "'" << std::endl;
+            return false;
+        }
     }
 
     hr = pDevice->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, (void**)&pAudioClient);
@@ -187,6 +193,7 @@ bool AudioManager::Initialize() {
         // If 16kHz fails, fall back to the system mix format
         pAudioClient->GetMixFormat(&pwfx);
         hr = pAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, 10000000, 0, pwfx, NULL);
+        std::cerr << "[-] Failed to use 16Hz falling back to system default.." << std::endl;
     }
     else {
         if (pwfx) CoTaskMemFree(pwfx); // Clean up old memory if it exists
@@ -195,7 +202,7 @@ bool AudioManager::Initialize() {
             memcpy(pwfx, &targetFormat, sizeof(WAVEFORMATEX));
         }
         else {
-            std::cerr << "[-] Failed to initialize Audio Mix Format" << std::endl;
+            std::cerr << "[-] Failed to initialize Audio Mix format" << std::endl;
         }
     }
 
