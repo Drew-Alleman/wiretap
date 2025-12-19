@@ -4,8 +4,14 @@ Stealthy Windows audio-capture tool with UDP exfiltration and randomized transmi
 
 <img width="1287" height="357" alt="wireshark" src="https://github.com/user-attachments/assets/85421209-d485-4f91-a986-82b1bcf4e2e0" />
 
-# To-Do
+# Importing the Audio File to Audacity
+The generated files cannot be opened in standard audio applications because they contain raw audio data. A player or editor that supports RAW audio files is required; Audacity will be used to open and review the files.
+<img width="1162" height="560" alt="image" src="https://github.com/user-attachments/assets/7e754a37-b4da-40f9-974f-6db6a254efa7" />
+<img width="690" height="432" alt="image" src="https://github.com/user-attachments/assets/d5599ba3-b539-4b7f-bcf0-58449c59b7a9" />
+<img width="998" height="600" alt="image" src="https://github.com/user-attachments/assets/1f35213e-f9b8-4397-a3dc-3db23583b7a0" />
 
+
+# To-Do
 ## In-General
 - Tutorial on how to import the raw audio into Audacity
 
