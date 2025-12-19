@@ -54,7 +54,7 @@ std::vector<std::wstring> AudioManager::GetMicrophones() {
             pCollection->Release();
         }
         else {
-            std::cerr << "[-] Failed to initialze local audio enumerator. " << std::endl;
+            std::cerr << "[-] Failed to initialze local audio enumerator" << std::endl;
         }
         pLocalEnumerator->Release();
     }
@@ -97,12 +97,12 @@ void AudioManager::SelectMicrophoneFromInt(int micIndex) {
             pEndpoint->Release();
         }
         else {
-            std::cerr << "[-] Failed to fetch microphone from index: " << micIndex << " using default microphone." << std::endl;
+            std::cerr << "[-] Failed to fetch microphone from index: " << micIndex << " falling back to default microphone" << std::endl;
         }
         pCollection->Release();
     }
     else {
-        std::cerr << "[-] Failed to initialze local audio enumerator. " << std::endl;
+        std::cerr << "[-] Failed to initialze local audio enumerator" << std::endl;
     }
 }
 
@@ -193,7 +193,7 @@ bool AudioManager::Initialize() {
         // If 16kHz fails, fall back to the system mix format
         pAudioClient->GetMixFormat(&pwfx);
         hr = pAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, 10000000, 0, pwfx, NULL);
-        std::cerr << "[-] Failed to use 16Hz falling back to system default.." << std::endl;
+        std::cerr << "[-] Failed to use 16Hz falling back to system default..." << std::endl;
     }
     else {
         if (pwfx) CoTaskMemFree(pwfx); // Clean up old memory if it exists
@@ -202,7 +202,7 @@ bool AudioManager::Initialize() {
             memcpy(pwfx, &targetFormat, sizeof(WAVEFORMATEX));
         }
         else {
-            std::cerr << "[-] Failed to initialize Audio Mix format" << std::endl;
+            std::cerr << "[-] Failed to initialize audio mix format" << std::endl;
         }
     }
 
