@@ -25,7 +25,6 @@ The following should be ready to go, I just need to test the code:
 - Logging
 - Test on different windows machines
 - Option to set the "power" level (min threshold to pick up microphone)
-- Better Sleep settings
 - help menu option
 - Optimize function to gather bytes from Microphone
 - Argument to change packet size
