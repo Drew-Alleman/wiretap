@@ -10,11 +10,7 @@ The generated files cannot be opened in standard audio applications because they
 <img width="690" height="432" alt="image" src="https://github.com/user-attachments/assets/d5599ba3-b539-4b7f-bcf0-58449c59b7a9" />
 <img width="998" height="600" alt="image" src="https://github.com/user-attachments/assets/1f35213e-f9b8-4397-a3dc-3db23583b7a0" />
 
-
 # To-Do
-## In-General
-- Tutorial on how to import the raw audio into Audacity
-
 ## Python Listener
 The following should be ready to go, I just need to test the code:
   - Allow multiple connections at once
@@ -25,7 +21,6 @@ The following should be ready to go, I just need to test the code:
 - Test on different windows machines
 - Option to set the "power" level (min threshold to pick up microphone)
 - Better Sleep settings
-- Better error handeling
 - help menu option
 - Optimize function to gather bytes from Microphone
 - Argument to change packet size
