@@ -3,7 +3,9 @@ Stealthy Windows audio-capture tool with UDP exfiltration and randomized transmi
 
 # Quicklinks
 - [Importing the Audio Files Into Audacity](#Importing-the-Audio-Files-Into-Audacity)
+- [Screenshots](#Screenshots)
 
+# Screenshots
 <img width="1126" height="537" alt="console" src="https://github.com/user-attachments/assets/40f1fdae-5cd2-4c78-80d9-148e768dee51" />
 <img width="1287" height="357" alt="wireshark" src="https://github.com/user-attachments/assets/85421209-d485-4f91-a986-82b1bcf4e2e0" />
 
