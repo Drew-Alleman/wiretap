@@ -164,7 +164,10 @@ bool AudioManager::Initialize() {
     }
 
     hr = pDevice->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, (void**)&pAudioClient);
-    if (FAILED(hr)) return false;
+    if (FAILED(hr)) {
+        std::cerr << "[-] Failed to activate audio device!" << std::endl;
+        return false;
+    }
 
     /* Note: We use a local struct to define our desired format.
        We use the "AUTOCONVERTPCM" flag so Windows handles the math
