@@ -1,5 +1,4 @@
 import socket
-import wave
 import logging
 import argparse
 import threading
@@ -13,9 +12,16 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-CHANNELS = 2
-SAMPLE_RATE = 48000
-SAMPLE_WIDTH = 2
+class ANSI:
+    RESET  = "\033[0m"
+    BLACK  = "\033[30m"
+    RED    = "\033[31m"
+    GREEN  = "\033[32m"
+    YELLOW = "\033[33m"
+    BLUE   = "\033[34m"
+    MAGENTA= "\033[35m"
+    CYAN   = "\033[36m"
+    WHITE  = "\033[37m"
 
 class Wiretap:
     def __init__(self, ip_address: str, port: int, packet_size: int) -> None:
@@ -30,15 +36,15 @@ class Wiretap:
         self.q = Queue(maxsize=10_000)
         self.stop_event = threading.Event()
 
-        self.client_queues = {}   # {(ip, port): Queue}
-        self.client_threads = {}  # {(ip, port): Thread}
+        self.client_queues = {} 
+        self.client_threads = {} 
 
         self.dispatcher_thread = None
 
     # NAT translation safe filename (avoid collisions for multiple clients on same IP)
     def generate_filename_from_addr(self, addr: tuple[str, int]) -> str:
         ip, port = addr
-        return f"{ip}-{port}-sound.wav"
+        return f"{ip}-{port}-audio.bin"
 
     def bind(self) -> bool:
         self.sock.settimeout(1.0)
@@ -53,34 +59,46 @@ class Wiretap:
             return False
 
     def client_writer(self, addr: tuple[str, int]) -> None:
-        """
-        One writer thread per client => packets are written in order WITHOUT locks.
-        """
-        ip, port = addr
-        filename = self.connected_clients[addr]
+            ip, port = addr
+            filename = self.connected_clients[addr]
+            
+            total_bytes = 0
+            packet_count = 0
+            
+            fh = open(filename, "ab")
+            client_q = self.client_queues[addr]
+            
+            while not self.stop_event.is_set():
+                try:
+                    data = client_q.get(timeout=2.0)
+                    
 
-        wav_file = wave.open(filename, 'wb')
-        wav_file.setnchannels(CHANNELS)
-        wav_file.setsampwidth(SAMPLE_WIDTH)
-        wav_file.setframerate(SAMPLE_RATE)
+                    while True:
+                        fh.write(data)
+                        total_bytes += len(data)
+                        packet_count += 1
+                        
+                        try:
+                            data = client_q.get_nowait()
+                        except Empty:
+                            break
+                    
+                    fh.flush()
 
-        client_q = self.client_queues[addr]
-        while not self.stop_event.is_set():
-            try:
-                data = client_q.get(timeout=0.5)
-            except Empty:
-                continue  # nothing to process yet, keep waiting
-            except OSError:
-                break
-
-            wav_file.writeframes(data)
-
-            logger.info(f"Processing {len(data)} bytes from {ip}:{port}")
-
-            client_q.task_done()
-
-        wav_file.close()
-
+                except Empty:
+                    if total_bytes > 0:
+                        size_kb = total_bytes / 1024
+                        logger.info(
+                            f"{ANSI.CYAN}[Stream Stats]{ANSI.RESET} {ip}:{port} -> "
+                            f"Received {ANSI.GREEN}{size_kb:.2f} KB{ANSI.RESET} "
+                            f"over {ANSI.YELLOW}{packet_count}{ANSI.RESET} packets."
+                        )
+                        total_bytes = 0
+                        packet_count = 0
+                    continue 
+                except OSError:
+                    break
+            fh.close()
 
     def dispatcher(self) -> None:
         """
@@ -89,13 +107,12 @@ class Wiretap:
         """
         while not self.stop_event.is_set():
             try:
-                data, addr = self.q.get(timeout=0.5)
+                data, addr = self.q.get(timeout=3.0)
             except Empty:
                 continue  # nothing to process yet, keep waiting
             except OSError:
                 break
 
-            # Ensure a per-client queue + writer exists
             if addr not in self.client_queues:
                 self.client_queues[addr] = Queue(maxsize=5_000)
 
@@ -103,7 +120,6 @@ class Wiretap:
                 self.client_threads[addr] = t
                 t.start()
 
-            # Enqueue to that client's ordered queue
             ip, port = addr
             try:
                 self.client_queues[addr].put_nowait(data)
@@ -120,7 +136,7 @@ class Wiretap:
         # If you ever want a generic worker pool, you'd need per-client ordering logic here.
         while not self.stop_event.is_set():
             try:
-                _ = self.q.get(timeout=0.5)
+                _ = self.q.get(timeout=.5)
                 self.q.task_done()
             except Empty:
                 continue  # nothing to process yet, keep waiting
@@ -138,7 +154,7 @@ class Wiretap:
                     # keep your message format, but generate unique file per NAT'd client
                     filename = self.generate_filename_from_addr(addr)
                     self.connected_clients[addr] = filename
-                    logger.info(f"New client: {ip}:{port} connected! Generated WAV file: {filename}")
+                    logger.info(f"{ANSI.CYAN}[New client]{ANSI.RESET} {ANSI.YELLOW}{ip}:{port}{ANSI.RESET} connected! Generated RAW audio file: {filename}")
 
                 try:
                     self.q.put_nowait((data, addr))
@@ -198,11 +214,11 @@ if __name__ == "__main__":
         port=args.port,
         packet_size=args.packet_size
     )
-    print("""                                  .
-     .              .   .'.     \\   /
-   \\   /      .'. .' '.'   '  -=  o  =-
- -=  o  =-  .'   '              / | \\
-   / | \\                          |
+    print(f"""                                  {ANSI.RED}.
+     {ANSI.RED}.             {ANSI.YELLOW} .   .'.{ANSI.RESET}     {ANSI.RED}\\   /{ANSI.RESET}
+   {ANSI.RED}\\   /      {ANSI.YELLOW}.'. .' '.'   '{ANSI.RESET}  {ANSI.RED}-=  o  =-{ANSI.RESET}
+ {ANSI.RED}-=  o  =-  {ANSI.YELLOW}.'   '{ANSI.RESET}              {ANSI.RED}/{ANSI.RESET} | {ANSI.RED}\\{ANSI.RESET}
+   {ANSI.RED}/{ANSI.RESET} | {ANSI.RED}\\{ANSI.RESET}                          |
      |                            |
      |                            |
      |                      .=====|
