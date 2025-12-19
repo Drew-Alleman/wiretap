@@ -43,7 +43,6 @@ std::vector<std::wstring> AudioManager::GetMicrophones() {
 
                 if (SUCCEEDED(pProps->GetValue(PKEY_Device_FriendlyName, &varName))) {
                     if (varName.pwszVal != nullptr) {
-                        // Directly push the wide string
                         microphones.push_back(std::wstring(varName.pwszVal));
                     }
                 }
@@ -53,6 +52,9 @@ std::vector<std::wstring> AudioManager::GetMicrophones() {
                 pEndpoint->Release();
             }
             pCollection->Release();
+        }
+        else {
+            std::cerr << "[-] Failed to initialze local audio enumerator. " << std::endl;
         }
         pLocalEnumerator->Release();
     }
@@ -76,6 +78,9 @@ void AudioManager::SelectMicrophoneFromInt(int micIndex) {
             return;
         }
     }
+    else {
+        std::cerr << "[-] pEnumerator is NULL! cant select a microphone" << std::endl;
+    }
 
     IMMDeviceCollection* pCollection = NULL;
     HRESULT hr = pEnumerator->EnumAudioEndpoints(eCapture, DEVICE_STATE_ACTIVE, &pCollection);
@@ -93,8 +98,11 @@ void AudioManager::SelectMicrophoneFromInt(int micIndex) {
         }
         else {
             std::cerr << "[-] Failed to fetch microphone from index: " << micIndex << " using default microphone." << std::endl;
-        }
+        } 
         pCollection->Release();
+    }
+    else {
+        std::cerr << "[-] Failed to initialze local audio enumerator. " << std::endl;
     }
 }
 
@@ -187,7 +195,7 @@ bool AudioManager::Initialize() {
             memcpy(pwfx, &targetFormat, sizeof(WAVEFORMATEX));
         }
         else {
-            std::cerr << "Failed to initialize Audio Mix Format" << std::endl;
+            std::cerr << "[-] Failed to initialize Audio Mix Format" << std::endl;
         }
     }
 
