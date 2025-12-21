@@ -241,4 +241,8 @@ if __name__ == "__main__":
 jgs  |[:::]|                '-----'
      '-----'
      """)
-    wiretap.start()
+
+    try:
+        wiretap.start()
+    except KeyboardInterrupt:
+        wiretap.stop()
