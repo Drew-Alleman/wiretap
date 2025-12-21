@@ -7,6 +7,7 @@ Stealthy Windows audio-capture tool with UDP exfiltration and randomized transmi
   - [Configuring the Listener](#Configuring-the-Listener)
     - [Example](#Example)
     - [All Arguments](#All-Arguments)
+  
   - [Configuring the Client](#Configuring-the-client)
     - [Client Address](#Client-Example)
     - [Running in the Background](#Running-in-the-Background)
