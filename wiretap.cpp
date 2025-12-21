@@ -22,6 +22,7 @@ int main(int argc, char* argv[]) {
 
     AudioManager AM;
     int micIndex = -1;
+    int packetSize = 1024;
     int sleepInput = 2;
     std::string ip_address = "127.0.0.1";
     int port = 4444;
@@ -41,6 +42,13 @@ int main(int argc, char* argv[]) {
                 sleepInput = ArgToInt("--sleep", argv[++i]);
                 if (sleepInput < 0 || sleepInput > 4) {
                     std::cerr << "[-] Invalid sleep input: " << sleepInput << " must be between 0->4" << std::endl;
+                    return 1;
+                }
+            }
+            else if (arg == "--packet-size" && i + 1 < argc) {
+                packetSize = ArgToInt("--packet-size", argv[++i]);
+                if (packetSize <= 0 || packetSize > 65355) {
+                    std::cerr << "[-] Invalid packet size input: " << packetSize << " must be between 1->65355" << std::endl;
                     return 1;
                 }
             }
@@ -101,6 +109,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Settings
+    AM.SetPacketSize(packetSize);
     AM.SetSleepMode(sleepInput);
     AM.SetListener(ip_address, port);
 
