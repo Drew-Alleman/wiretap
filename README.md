@@ -3,7 +3,8 @@ Stealthy Windows audio-capture tool with UDP exfiltration and randomized transmi
 
 # Screenshots
 <img width="1080" height="425" alt="console" src="https://github.com/user-attachments/assets/ee1bbf8c-4ea4-42b1-b975-25082d247728" />
-<img width="1287" height="357" alt="wireshark" src="https://github.com/user-attachments/assets/85421209-d485-4f91-a986-82b1bcf4e2e0" />
+<img width="1524" height="409" alt="wireshark" src="https://github.com/user-attachments/assets/e49ea75c-9875-420d-a160-f546d5f780fd" />
+
 
 # Usage
 ## Configuring the Listener
