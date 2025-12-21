@@ -112,8 +112,6 @@ The following should be ready to go, I just need to test the code:
 - Optimize function to gather bytes from Microphone
 - Enumeration packet to gather information about the device
 - Option to only capture audio between certain time periods
-
-### Administrator Settings (IDK yet)
-- Persistance??
-- Add option to remove the "wiretap.exe is using your microphone" on the windows task bar (needs admin)
+- Add to startup option
+- export/load config to/from a `.ini` file
 
