@@ -6,7 +6,8 @@ Stealthy Windows audio-capture tool with UDP exfiltration and randomized transmi
 - [Screenshots](#Screenshots)
 
 # Screenshots
-<img width="1126" height="537" alt="console" src="https://github.com/user-attachments/assets/40f1fdae-5cd2-4c78-80d9-148e768dee51" />
+<img width="1080" height="425" alt="console" src="https://github.com/user-attachments/assets/ee1bbf8c-4ea4-42b1-b975-25082d247728" />
+
 <img width="1287" height="357" alt="wireshark" src="https://github.com/user-attachments/assets/85421209-d485-4f91-a986-82b1bcf4e2e0" />
 
 # Importing the Audio Files Into Audacity
@@ -21,13 +22,10 @@ The following should be ready to go, I just need to test the code:
   - Allow multiple connections at once
 
 ## Wiretap
-- Verbose setting
 - Logging
 - Test on different windows machines
 - Option to set the "power" level (min threshold to pick up microphone)
-- help menu option
 - Optimize function to gather bytes from Microphone
-- Argument to change packet size
 - Enumeration packet to gather information about the device
 - Option to only capture audio between certain time periods
 
