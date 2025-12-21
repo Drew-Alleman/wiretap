@@ -181,14 +181,14 @@ class Wiretap:
         self.dispatcher_thread.start()
 
     def start(self) -> None:
-        logger.info("starting Wiretap...")
+        logger.info("starting wiretap...")
         if not self.bind():
             return
         self.start_workers()
         self.listen()
 
     def stop(self) -> None:
-        logger.info("stopping Wiretap...")
+        logger.info("stopping wiretap...")
         self.stop_event.set()
         self.sock.close()
 
