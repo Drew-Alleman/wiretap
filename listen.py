@@ -42,7 +42,6 @@ class Wiretap:
 
         self.dispatcher_thread = None
 
-    # NAT translation safe filename (avoid collisions for multiple clients on same IP)
     def generate_filename_from_addr(self, addr: tuple[str, int]) -> str:
         ip, port = addr
         return f"{ip}-{port}-audio.bin"
@@ -51,11 +50,11 @@ class Wiretap:
         self.sock.settimeout(1.0)
         try:
             self.sock.bind(self.connection_tuple)
-            logger.info(f"Successfully bound to interface {self.ip_address}:{self.port}")
+            logger.info(f"successfully bound to interface {self.ip_address}:{self.port}")
             return True
         except PermissionError:
             logger.critical(
-                f"Failed to bind to interface: {self.ip_address}:{self.port} requires Admin/Sudo privileges!"
+                f"failed to bind to interface: {self.ip_address}:{self.port} requires admin/sudo privileges!"
             )
             return False
 
@@ -90,9 +89,9 @@ class Wiretap:
                     if total_bytes > 0:
                         size_kb = total_bytes / 1024
                         logger.info(
-                            f"{ANSI.CYAN}[Stream Stats]{ANSI.RESET} {ip}:{port} -> "
-                            f"Received {ANSI.GREEN}{size_kb:.2f} KB{ANSI.RESET} "
-                            f"over {ANSI.YELLOW}{packet_count}{ANSI.RESET} packets."
+                            f"{ip}:{port} "
+                            f"sent {ANSI.GREEN}{size_kb:.2f} KB{ANSI.RESET} "
+                            f"over {ANSI.YELLOW}{packet_count}{ANSI.RESET} packets"
                         )
                         total_bytes = 0
                         packet_count = 0
@@ -125,7 +124,7 @@ class Wiretap:
             try:
                 self.client_queues[addr].put_nowait(data)
             except Full:
-                logger.warning("Queue full; dropping packet from %s:%s", ip, port)
+                logger.warning("queue full; dropping packet from %s:%s", ip, port)
 
             self.q.task_done()
 
@@ -155,12 +154,12 @@ class Wiretap:
                     # keep your message format, but generate unique file per NAT'd client
                     filename = self.generate_filename_from_addr(addr)
                     self.connected_clients[addr] = filename
-                    logger.info(f"{ANSI.CYAN}[New client]{ANSI.RESET} {ANSI.YELLOW}{ip}:{port}{ANSI.RESET} connected! Generated RAW audio file: {filename}")
+                    logger.info(f"{ANSI.YELLOW}{ip}:{port}{ANSI.RESET} joined the server! Generated RAW audio file: {filename}")
 
                 try:
                     self.q.put_nowait((data, addr))
                 except Full:
-                    logger.warning("Queue full; dropping packet from %s:%s", ip, port)
+                    logger.warning("queue full; dropping packet from %s:%s", ip, port)
 
             except socket.timeout:
                 continue
@@ -168,10 +167,10 @@ class Wiretap:
             except OSError as e:
                 if e.errno == errno.EMSGSIZE:
                     logger.critical(
-                        "The packet size of the server needs to be adjusted to match the client (--packet-size)"
+                        "the packet size of the server needs to be adjusted to match the client (--packet-size)"
                     )
                 else:
-                    logger.exception(f"Unexpected OS error occurred: {e}")
+                    logger.exception(f"unexpected OS error occurred: {e}")
                 self.stop()
 
             except KeyboardInterrupt:
