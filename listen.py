@@ -1,3 +1,4 @@
+import errno
 import socket
 import logging
 import argparse
@@ -163,6 +164,16 @@ class Wiretap:
 
             except socket.timeout:
                 continue
+
+            except OSError as e:
+                if e.errno == errno.EMSGSIZE:
+                    logger.critical(
+                        "The packet size of the server needs to be adjusted to match the client (--packet-size)"
+                    )
+                else:
+                    logger.exception(f"Unexpected OS error occurred: {e}")
+                self.stop()
+
             except KeyboardInterrupt:
                 self.stop()
 
@@ -171,37 +182,37 @@ class Wiretap:
         self.dispatcher_thread.start()
 
     def start(self) -> None:
-        logger.info("Starting Wiretap...")
+        logger.info("starting Wiretap...")
         if not self.bind():
             return
         self.start_workers()
         self.listen()
 
     def stop(self) -> None:
-        logger.info("Stopping Wiretap...")
+        logger.info("stopping Wiretap...")
         self.stop_event.set()
         self.sock.close()
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Wiretap UDP audio listener"
+        description="UDP Wiretap Server (https://github.com/Drew-Alleman/wiretap)"
     )
     parser.add_argument(
         "--bind-ip",
-        default="127.0.0.1",
-        help="IP address to bind to (default: 127.0.0.1)"
+        default="0.0.0.0",
+        help="IP address the server should bind to (default: 0.0.0.0)"
     )
     parser.add_argument(
         "--port",
         type=int,
-        default=443,
-        help="UDP port to listen on (default: 443)"
+        default=53,
+        help="UDP port to listen on (default: 53)"
     )
     parser.add_argument(
         "--packet-size",
         type=int,
         default=1024,
-        help="Max UDP packet size in bytes (default: 1024)"
+        help="Packet size the client is configured to (default: 1024)"
     )
 
     return parser.parse_args()
@@ -216,8 +227,8 @@ if __name__ == "__main__":
     )
     print(f"""                                  {ANSI.RED}.
      {ANSI.RED}.             {ANSI.YELLOW} .   .'.{ANSI.RESET}     {ANSI.RED}\\   /{ANSI.RESET}
-   {ANSI.RED}\\   /      {ANSI.YELLOW}.'. .' '.'   '{ANSI.RESET}  {ANSI.RED}-=  o  =-{ANSI.RESET}
- {ANSI.RED}-=  o  =-  {ANSI.YELLOW}.'   '{ANSI.RESET}              {ANSI.RED}/{ANSI.RESET} | {ANSI.RED}\\{ANSI.RESET}
+   {ANSI.RED}\\   /      {ANSI.YELLOW}.'. .' '.'   '{ANSI.RESET}  {ANSI.RED}-=  {ANSI.RESET}o{ANSI.RED}  =-{ANSI.RESET}
+ {ANSI.RED}-=  {ANSI.RESET}o{ANSI.RED}  =-  {ANSI.YELLOW}.'   '{ANSI.RESET}              {ANSI.RED}/{ANSI.RESET} | {ANSI.RED}\\{ANSI.RESET}
    {ANSI.RED}/{ANSI.RESET} | {ANSI.RED}\\{ANSI.RESET}                          |
      |                            |
      |                            |
@@ -230,8 +241,5 @@ if __name__ == "__main__":
      ||___||                |[:::]|
 jgs  |[:::]|                '-----'
      '-----'
-     
-   [https://github.com/Drew-Alleman/wiretap]
-
-""")
+     """)
     wiretap.start()

@@ -149,6 +149,7 @@ void AudioManager::SetListener(std::string ip_address, int port) {
         return;
     }
     socketInitialized = true;
+    LogMessage("[INFO] connected to listener: " + ip_address + ":" + std::to_string(port));
 }
 
 bool AudioManager::Initialize() {
