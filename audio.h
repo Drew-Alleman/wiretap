@@ -32,6 +32,7 @@ private:
 	sockaddr_in serverAddr;
 	bool socketInitialized = false;
 	std::wstring targetDeviceId;
+	bool isVerbose = false;
 
 public:
 	std::vector<char> globalAudioBuffer;
@@ -49,7 +50,7 @@ public:
 	IAudioClient* pAudioClient = NULL;
 	IAudioCaptureClient* pCaptureClient = NULL;
 	WAVEFORMATEX* pwfx = NULL;
-
+	void LogMessage(const std::string& message);
 	void AudioSniffer();
 	void Exfiltrate();
 	bool Initialize();
@@ -60,6 +61,7 @@ public:
 	void SetSleepMode(int mode);
 	std::vector<std::wstring> GetMicrophones();
 	void SetPacketSize(int size);
+	void SetIsVerbose(bool mode);
 	void ListMicrophones();
 	void SelectMicrophoneFromInt(int micIndex);
 	void RandomSleep();

