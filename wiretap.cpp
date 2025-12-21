@@ -141,7 +141,12 @@ int main(int argc, char* argv[]) {
     }
 
     AM.SetIsVerbose(isVerbose);
-
+    AM.LogMessage(R"(
+        _         _
+__ __ _(_)_ _ ___| |_ __ _ _ __
+\ V  V / | '_/ -_)  _/ _` | '_ \
+ \_/\_/|_|_| \___|\__\__,_| .__/
+                          |_|)");
     if (micIndex != -1) {
         AM.SelectMicrophoneFromInt(micIndex);
     }
