@@ -1,22 +1,6 @@
 # wiretap
 Stealthy Windows audio-capture tool with UDP exfiltration and randomized transmission intervals for Evasion-focused Red Team operations. (WIP)
 
-# Quicklinks
-- [Screenshots](#Screenshots)
-- [Usage](#Usage)
-  - [Configuring the Listener](#Configuring-the-Listener)
-    - [Example](#Example)
-    - [All Arguments](#All-Arguments)
-  
-  - [Configuring the Client](#Configuring-the-client)
-    - [Client Address](#Client-Example)
-    - [Running in the Background](#Running-in-the-Background)
-    - [Listing Available Microphones](#Listing-Available-Microphones)
-    - [Selecting a Microphone](#Selecting-a-Microphone)
-    - [All Arguments](#All-Arguments)
-
-- [Importing the Audio Files Into Audacity](#Importing-the-Audio-Files-Into-Audacity)
-
 # Screenshots
 <img width="1080" height="425" alt="console" src="https://github.com/user-attachments/assets/ee1bbf8c-4ea4-42b1-b975-25082d247728" />
 <img width="1287" height="357" alt="wireshark" src="https://github.com/user-attachments/assets/85421209-d485-4f91-a986-82b1bcf4e2e0" />
