@@ -5,7 +5,6 @@ Stealthy Windows audio-capture tool with UDP exfiltration and randomized transmi
 <img width="1080" height="425" alt="console" src="https://github.com/user-attachments/assets/ee1bbf8c-4ea4-42b1-b975-25082d247728" />
 <img width="1524" height="409" alt="wireshark" src="https://github.com/user-attachments/assets/e49ea75c-9875-420d-a160-f546d5f780fd" />
 
-
 # Usage
 ## Configuring the Listener
 First, set up the listener server that will receive audio captured from the target device. By default, the server binds to all network interfaces and listens on UDP port 53. You can override the bind address using `--bind-ip` and change the listening port with `--port`.
@@ -104,15 +103,18 @@ The generated files cannot be opened in standard audio applications because they
 ## Python Listener
 The following should be ready to go, I just need to test the code:
   - Allow multiple connections at once
+- Actual Session Log File
+- Integrate the enumeration frame to list information about the provided computer (WIP)
+- Track sessions by hashing the username+hostname of the victim rather then IP:PORT
 
 ## Wiretap
 - Optional Keylogger that beacons out to the listener??
-- Python argument to change all the variable and class names to guarantee a differentt hash on each compile
+- Python argument to change all the variable and class names to guarantee a different hash on each compile
 - Logging
 - Test on different windows machines
 - Option to set the "power" level (min threshold to pick up microphone)
 - Integrating libopus for compression 
-- Enumeration packet to gather information about the device
+- Enumeration packet to gather information about the device (WIP)
 - Option to only capture audio between certain time periods
 - Add to startup option
 - export/load config to/from a `.ini` file
