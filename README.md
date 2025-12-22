@@ -78,12 +78,12 @@ Options:
   --port <port>          UDP port to use (default: 53)
   --packet-size <bytes>  Client packet size in bytes (1û65355) (default: 1024)
 
-  --sleep <mode>         Sleep profile (0û4) (default: 2)
-                         0 = 5û20s (Tiny)
-                         1 = 10û40s (Short)
-                         2 = 20û60s (Normal)
-                         3 = 40û100s (Long)
-                         4 = 15û400s (Random)
+  --sleep <mode>         Sleep profile (0-4) (default: 2)
+                         0 = 5-20 seconds (Tiny)
+                         1 = 10-40s (Short)
+                         2 = 20-60s (Normal)
+                         3 = 40-100s (Long)
+                         4 = 15-400s (Random)
 
   --background           Run in the background (spawns a child process)
   --verbose              Enable verbose logging
