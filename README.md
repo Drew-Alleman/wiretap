@@ -106,6 +106,7 @@ The following should be ready to go, I just need to test the code:
 - Actual Session Log File
 - Integrate the enumeration frame to list information about the provided computer (WIP)
 - Track sessions by hashing the username+hostname of the victim rather then IP:PORT
+- Add docstrings to functions
 
 ## Wiretap
 - Optional Keylogger that beacons out to the listener??
@@ -118,4 +119,6 @@ The following should be ready to go, I just need to test the code:
 - Option to only capture audio between certain time periods
 - Add to startup option
 - export/load config to/from a `.ini` file
+- Add docstrings to functions
+
 
