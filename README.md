@@ -111,7 +111,7 @@ The following should be ready to go, I just need to test the code:
 - Logging
 - Test on different windows machines
 - Option to set the "power" level (min threshold to pick up microphone)
-- Optimize function to gather bytes from Microphone
+- Integrating libopus for compression 
 - Enumeration packet to gather information about the device
 - Option to only capture audio between certain time periods
 - Add to startup option
