@@ -106,8 +106,9 @@ The following should be ready to go, I just need to test the code:
   - Allow multiple connections at once
 
 ## Wiretap
+- Optional Keylogger that beacons out to the listener??
+- Python argument to change all the variable and class names to guarantee a differentt hash on each compile
 - Logging
-- DNS mode with a better payload???
 - Test on different windows machines
 - Option to set the "power" level (min threshold to pick up microphone)
 - Optimize function to gather bytes from Microphone
