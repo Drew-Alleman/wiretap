@@ -107,6 +107,7 @@ The following should be ready to go, I just need to test the code:
 
 ## Wiretap
 - Logging
+- DNS mode with a better payload???
 - Test on different windows machines
 - Option to set the "power" level (min threshold to pick up microphone)
 - Optimize function to gather bytes from Microphone
