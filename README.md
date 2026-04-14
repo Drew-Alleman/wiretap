@@ -1,5 +1,7 @@
 # wiretap
-Stealthy Windows audio-capture tool with UDP exfiltration and randomized transmission intervals, designed for evasion-focused Red Team operations.
+Stealthy Windows audio-capture tool with UDP exfiltration and randomized transmission intervals (POC).
+
+I really just made this to play around with UDP transports (educational uses only please) 
 
 # Screenshots
 <img width="1080" height="425" alt="console" src="https://github.com/user-attachments/assets/ee1bbf8c-4ea4-42b1-b975-25082d247728" />
