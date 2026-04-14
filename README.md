@@ -101,26 +101,4 @@ The generated files cannot be opened in standard audio applications because they
 <img width="690" height="432" alt="image" src="https://github.com/user-attachments/assets/d5599ba3-b539-4b7f-bcf0-58449c59b7a9" />
 <img width="998" height="600" alt="image" src="https://github.com/user-attachments/assets/1f35213e-f9b8-4397-a3dc-3db23583b7a0" />
 
-# To-Do
-## Python Listener
-The following should be ready to go, I just need to test the code:
-  - Allow multiple connections at once
-- Actual Session Log File
-- Integrate the enumeration frame to list information about the provided computer (WIP)
-- Track sessions by hashing the username+hostname of the victim rather then IP:PORT
-- Add docstrings to functions
-
-## Wiretap
-- Optional Keylogger that beacons out to the listener??
-- Python argument to change all the variable and class names to guarantee a different hash on each compile
-- Logging
-- Test on different windows machines
-- Option to set the "power" level (min threshold to pick up microphone)
-- Integrating libopus for compression 
-- Enumeration packet to gather information about the device (WIP)
-- Option to only capture audio between certain time periods
-- Add to startup option
-- export/load config to/from a `.ini` file
-- Add docstrings to functions
-
 
